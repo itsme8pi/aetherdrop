@@ -1,4 +1,3 @@
-javascript
 const socket = io();
 
 const WEAPONS = {
@@ -21,6 +20,86 @@ const BADGES = [
 
 const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
+// Attach Auth & UI Buttons First so they work immediately
+function refreshLobbyUI() {
+  const s = PlayerDB.stats;
+  document.getElementById('displayUsername').innerText = (PlayerDB.currentUser ? PlayerDB.currentUser.username : 'SURVIVOR').toUpperCase();
+  document.getElementById('statLevel').innerText = s.level;
+  document.getElementById('xpFill').style.width = ((s.xp % 500) / 5) + '%';
+  document.getElementById('quickWins').innerText = s.wins;
+  document.getElementById('quickKills').innerText = s.kills;
+  document.getElementById('quickMatches').innerText = s.matches;
+
+  document.getElementById('profLevel').innerText = s.level;
+  document.getElementById('profWins').innerText = s.wins;
+  document.getElementById('profKills').innerText = s.kills;
+  document.getElementById('profMatches').innerText = s.matches;
+
+  const armoryGrid = document.getElementById('armoryGrid');
+  armoryGrid.innerHTML = Object.values(WEAPONS).map((w) =>
+    '<div class="gun-card"><h4>' + w.name + ' (' + w.type + ')</h4>' +
+    '<p>Damage: <strong>' + w.damage + '</strong> | Mag: <strong>' + w.mag + '</strong></p>' +
+    '<p>Range: <strong>' + w.range + 'm</strong></p></div>'
+  ).join('');
+
+  const badgesGrid = document.getElementById('badgesGrid');
+  badgesGrid.innerHTML = BADGES.map((b) => {
+    const unlocked = b.check(s);
+    return '<div class="badge-card ' + (unlocked ? 'unlocked' : '') + '">' +
+      '<h4>' + (unlocked ? '🏆' : '🔒') + ' ' + b.title + '</h4>' +
+      '<p>' + b.desc + '</p></div>';
+  }).join('');
+}
+
+document.getElementById('signupBtn').onclick = async () => {
+  try {
+    await PlayerDB.signup(
+      document.getElementById('usernameInput').value,
+      document.getElementById('passwordInput').value
+    );
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('lobbyScreen').classList.remove('hidden');
+    refreshLobbyUI();
+  } catch (err) {
+    document.getElementById('authError').innerText = err.message;
+  }
+};
+
+document.getElementById('loginBtn').onclick = async () => {
+  try {
+    await PlayerDB.login(
+      document.getElementById('usernameInput').value,
+      document.getElementById('passwordInput').value
+    );
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('lobbyScreen').classList.remove('hidden');
+    refreshLobbyUI();
+  } catch (err) {
+    document.getElementById('authError').innerText = err.message;
+  }
+};
+
+document.getElementById('logoutBtn').onclick = () => location.reload();
+
+document.querySelectorAll('.nav-tab').forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll('.nav-tab').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.tab-content').forEach((tc) => tc.classList.add('hidden'));
+    document.getElementById('tab-' + target).classList.remove('hidden');
+  };
+});
+
+document.getElementById('playBtn').onclick = () => {
+  document.getElementById('playBtn').classList.add('hidden');
+  document.getElementById('matchmakingStatus').classList.remove('hidden');
+  socket.emit('findMatch', { username: PlayerDB.currentUser ? PlayerDB.currentUser.username : 'Survivor' });
+};
+
+document.getElementById('backToLobbyBtn').onclick = () => location.reload();
+
+// Three.js 3D Engine Setup
 const canvas = document.getElementById('gameCanvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -183,90 +262,81 @@ window.addEventListener('keydown', (e) => {
   if (gameState !== 'PLAYING') return;
   if (e.code === 'Digit1') selectWeaponSlot(0);
   if (e.code === 'Digit2') selectWeaponSlot(1);
-  if (e.code === 'Digit3') selectWeaponSlot(2);
-  if (e.code === 'KeyR') reloadWeapon();
-  if (e.code === 'KeyG') useGlooWall();
-  if (e.code === 'KeyH') useMedkit();
-  if (e.code === 'KeyF') pickupNearbyLoot();
-  if (e.code === 'KeyC') localPlayer.crouching = !localPlayer.crouching;
+Use code with caution.
+if (e.code === 'Digit3') selectWeaponSlot(2);
+if (e.code === 'KeyR') reloadWeapon();
+if (e.code === 'KeyG') useGlooWall();
+if (e.code === 'KeyH') useMedkit();
+if (e.code === 'KeyF') pickupNearbyLoot();
+if (e.code === 'KeyC') localPlayer.crouching = !localPlayer.crouching;
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-
 document.addEventListener('mousemove', (e) => {
-  if (gameState === 'PLAYING' && document.pointerLockElement === canvas) {
-    localPlayer.rotY -= e.movementX * 0.0025;
-    localPlayer.pitch = Math.max(-0.6, Math.min(0.6, localPlayer.pitch - e.movementY * 0.002));
-  }
+if (gameState === 'PLAYING' && document.pointerLockElement === canvas) {
+localPlayer.rotY -= e.movementX * 0.0025;
+localPlayer.pitch = Math.max(-0.6, Math.min(0.6, localPlayer.pitch - e.movementY * 0.002));
+}
 });
-
 canvas.addEventListener('mousedown', (e) => {
-  if (gameState !== 'PLAYING') return;
-  if (!isMobile && document.pointerLockElement !== canvas) {
-    canvas.requestPointerLock();
-    return;
-  }
-  if (e.button === 0) fireWeapon();
-  if (e.button === 2) toggleScope();
+if (gameState !== 'PLAYING') return;
+if (!isMobile && document.pointerLockElement !== canvas) {
+canvas.requestPointerLock();
+return;
+}
+if (e.button === 0) fireWeapon();
+if (e.button === 2) toggleScope();
 });
 window.addEventListener('contextmenu', (e) => e.preventDefault());
-
 function initMobileControls() {
-  if (!isMobile) {
-    document.getElementById('pcControlsHint').classList.remove('hidden');
-    return;
-  }
-  document.getElementById('mobileControls').classList.remove('hidden');
-
-  const joyZone = document.getElementById('joystickZone');
-  const joyKnob = document.getElementById('joystickKnob');
-  let joyTouchId = null;
-
-  joyZone.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    joyTouchId = e.changedTouches[0].identifier;
-  });
-
-  joyZone.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    for (const t of e.changedTouches) {
-      if (t.identifier === joyTouchId) {
-        const rect = joyZone.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = Math.max(-40, Math.min(40, t.clientX - cx));
-        const dy = Math.max(-40, Math.min(40, t.clientY - cy));
-        joyKnob.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
-        joyVec.x = dx / 40;
-        joyVec.y = dy / 40;
-      }
-    }
-  });
-
-  joyZone.addEventListener('touchend', () => {
-    joyTouchId = null;
-    joyKnob.style.transform = 'translate(0px, 0px)';
-    joyVec = { x: 0, y: 0 };
-  });
-
-  let lastTouchX = null;
-  canvas.addEventListener('touchstart', (e) => {
-    if (e.touches[0].clientX > window.innerWidth * 0.35) lastTouchX = e.touches[0].clientX;
-  });
-  canvas.addEventListener('touchmove', (e) => {
-    const t = e.touches[0];
-    if (t.clientX > window.innerWidth * 0.35 && lastTouchX !== null) {
-      localPlayer.rotY -= (t.clientX - lastTouchX) * 0.008;
-      lastTouchX = t.clientX;
-    }
-  });
-
-  document.getElementById('btnFire').addEventListener('touchstart', (e) => { e.preventDefault(); isFiringTouch = true; fireWeapon(); });
-  document.getElementById('btnFire').addEventListener('touchend', () => { isFiringTouch = false; });
-  document.getElementById('btnScope').addEventListener('touchstart', (e) => { e.preventDefault(); toggleScope(); });
-  document.getElementById('btnGloo').addEventListener('touchstart', (e) => { e.preventDefault(); useGlooWall(); });
-  document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); if (localPlayer.y <= 0.05) localPlayer.vy = 8.5; });
-  document.getElementById('btnCrouch').addEventListener('touchstart', (e) => { e.preventDefault(); localPlayer.crouching = !localPlayer.crouching; });
-Use code with caution.
+if (!isMobile) {
+document.getElementById('pcControlsHint').classList.remove('hidden');
+return;
+}
+document.getElementById('mobileControls').classList.remove('hidden');
+const joyZone = document.getElementById('joystickZone');
+const joyKnob = document.getElementById('joystickKnob');
+let joyTouchId = null;
+joyZone.addEventListener('touchstart', (e) => {
+e.preventDefault();
+joyTouchId = e.changedTouches[0].identifier;
+});
+joyZone.addEventListener('touchmove', (e) => {
+e.preventDefault();
+for (const t of e.changedTouches) {
+if (t.identifier === joyTouchId) {
+const rect = joyZone.getBoundingClientRect();
+const cx = rect.left + rect.width / 2;
+const cy = rect.top + rect.height / 2;
+const dx = Math.max(-40, Math.min(40, t.clientX - cx));
+const dy = Math.max(-40, Math.min(40, t.clientY - cy));
+joyKnob.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+joyVec.x = dx / 40;
+joyVec.y = dy / 40;
+}
+}
+});
+joyZone.addEventListener('touchend', () => {
+joyTouchId = null;
+joyKnob.style.transform = 'translate(0px, 0px)';
+joyVec = { x: 0, y: 0 };
+});
+let lastTouchX = null;
+canvas.addEventListener('touchstart', (e) => {
+if (e.touches[0].clientX > window.innerWidth * 0.35) lastTouchX = e.touches[0].clientX;
+});
+canvas.addEventListener('touchmove', (e) => {
+const t = e.touches[0];
+if (t.clientX > window.innerWidth * 0.35 && lastTouchX !== null) {
+localPlayer.rotY -= (t.clientX - lastTouchX) * 0.008;
+lastTouchX = t.clientX;
+}
+});
+document.getElementById('btnFire').addEventListener('touchstart', (e) => { e.preventDefault(); isFiringTouch = true; fireWeapon(); });
+document.getElementById('btnFire').addEventListener('touchend', () => { isFiringTouch = false; });
+document.getElementById('btnScope').addEventListener('touchstart', (e) => { e.preventDefault(); toggleScope(); });
+document.getElementById('btnGloo').addEventListener('touchstart', (e) => { e.preventDefault(); useGlooWall(); });
+document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); if (localPlayer.y <= 0.05) localPlayer.vy = 8.5; });
+document.getElementById('btnCrouch').addEventListener('touchstart', (e) => { e.preventDefault(); localPlayer.crouching = !localPlayer.crouching; });
 document.getElementById('btnReload').addEventListener('touchstart', (e) => { e.preventDefault(); reloadWeapon(); });
 document.getElementById('btnLoot').addEventListener('touchstart', (e) => { e.preventDefault(); pickupNearbyLoot(); });
 }
@@ -584,74 +654,6 @@ bulletTracers.splice(i, 1);
 renderer.render(scene, camera);
 }
 animate();
-function refreshLobbyUI() {
-const s = PlayerDB.stats;
-document.getElementById('displayUsername').innerText = (PlayerDB.currentUser ? PlayerDB.currentUser.username : 'SURVIVOR').toUpperCase();
-document.getElementById('statLevel').innerText = s.level;
-document.getElementById('xpFill').style.width = ((s.xp % 500) / 5) + '%';
-document.getElementById('quickWins').innerText = s.wins;
-document.getElementById('quickKills').innerText = s.kills;
-document.getElementById('quickMatches').innerText = s.matches;
-document.getElementById('profLevel').innerText = s.level;
-document.getElementById('profWins').innerText = s.wins;
-document.getElementById('profKills').innerText = s.kills;
-document.getElementById('profMatches').innerText = s.matches;
-const armoryGrid = document.getElementById('armoryGrid');
-armoryGrid.innerHTML = Object.values(WEAPONS).map((w) =>
-'' + w.name + ' (' + w.type + ')' +
-'Damage: ' + w.damage + ' | Mag: ' + w.mag + '' +
-'Range: ' + w.range + 'm'
-).join('');
-const badgesGrid = document.getElementById('badgesGrid');
-badgesGrid.innerHTML = BADGES.map((b) => {
-const unlocked = b.check(s);
-return '' +
-'' + (unlocked ? '🏆' : '🔒') + ' ' + b.title + '' +
-'' + b.desc + '';
-}).join('');
-}
-document.getElementById('signupBtn').onclick = async () => {
-try {
-await PlayerDB.signup(
-document.getElementById('usernameInput').value,
-document.getElementById('passwordInput').value
-);
-document.getElementById('authScreen').classList.add('hidden');
-document.getElementById('lobbyScreen').classList.remove('hidden');
-refreshLobbyUI();
-} catch (err) {
-document.getElementById('authError').innerText = err.message;
-}
-};
-document.getElementById('loginBtn').onclick = async () => {
-try {
-await PlayerDB.login(
-document.getElementById('usernameInput').value,
-document.getElementById('passwordInput').value
-);
-document.getElementById('authScreen').classList.add('hidden');
-document.getElementById('lobbyScreen').classList.remove('hidden');
-refreshLobbyUI();
-} catch (err) {
-document.getElementById('authError').innerText = err.message;
-}
-};
-document.getElementById('logoutBtn').onclick = () => location.reload();
-document.querySelectorAll('.nav-tab').forEach((btn) => {
-btn.onclick = () => {
-document.querySelectorAll('.nav-tab').forEach((b) => b.classList.remove('active'));
-btn.classList.add('active');
-const target = btn.dataset.tab;
-document.querySelectorAll('.tab-content').forEach((tc) => tc.classList.add('hidden'));
-document.getElementById('tab-' + target).classList.remove('hidden');
-};
-});
-document.getElementById('playBtn').onclick = () => {
-document.getElementById('playBtn').classList.add('hidden');
-document.getElementById('matchmakingStatus').classList.remove('hidden');
-socket.emit('findMatch', { username: PlayerDB.currentUser ? PlayerDB.currentUser.username : 'Survivor' });
-};
-document.getElementById('backToLobbyBtn').onclick = () => location.reload();
 window.addEventListener('resize', () => {
 camera.aspect = window.innerWidth / window.innerHeight;
 camera.updateProjectionMatrix();
