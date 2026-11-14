@@ -1,0 +1,160 @@
+html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AETHERDROP 3D - Tactical Battle Royale</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cloudflare.com"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://gstatic.com"></script>
+  <script src="https://gstatic.com"></script>
+  <script src="https://gstatic.com"></script>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- AUTH SCREEN -->
+  <div id="authScreen" class="overlay-screen">
+    <div class="auth-card">
+      <div class="brand-badge">TACTICAL BATTLE ROYALE</div>
+      <h1>AETHERDROP <span>3D</span></h1>
+      <p class="subtitle">Zero-Download Island Survival</p>
+      <input type="text" id="usernameInput" placeholder="Enter Survivor Username" maxlength="16" />
+      <input type="password" id="passwordInput" placeholder="Enter Password (min 6 chars)" />
+      <div class="auth-buttons">
+        <button id="loginBtn" class="btn-primary">LOGIN</button>
+        <button id="signupBtn" class="btn-secondary">SIGN UP</button>
+      </div>
+      <p id="authError" class="error-text"></p>
+    </div>
+  </div>
+
+  <!-- MAIN LOBBY UI -->
+  <div id="lobbyScreen" class="hidden">
+    <div class="lobby-top">
+      <div class="player-card">
+        <div class="avatar-box">LVL <span id="statLevel">1</span></div>
+        <div>
+          <div id="displayUsername" class="player-name">SURVIVOR</div>
+          <div class="xp-bar"><div id="xpFill" class="xp-fill" style="width: 30%"></div></div>
+        </div>
+      </div>
+      <div class="top-nav">
+        <button class="nav-tab active" data-tab="lobby">LOBBY</button>
+        <button class="nav-tab" data-tab="armory">ARMORY</button>
+        <button class="nav-tab" data-tab="profile">PROFILE & BADGES</button>
+        <button id="logoutBtn" class="btn-logout">LOGOUT</button>
+      </div>
+    </div>
+
+    <div id="tab-lobby" class="tab-content active">
+      <div class="quick-stats-panel">
+        <h3>CAREER RECORD</h3>
+        <div class="stat-row"><span>BOOYAH WINS</span><strong id="quickWins">0</strong></div>
+        <div class="stat-row"><span>TOTAL KILLS</span><strong id="quickKills">0</strong></div>
+        <div class="stat-row"><span>MATCHES PLAYED</span><strong id="quickMatches">0</strong></div>
+      </div>
+
+      <div class="play-dock">
+        <div class="mode-selector">
+          <span class="mode-tag">SOLO / SQUAD FILL</span>
+          <span class="map-name">AETHER ISLAND • 16 FIGHTERS</span>
+        </div>
+        <button id="playBtn" class="btn-booyah-play">START MATCH</button>
+        <div id="matchmakingStatus" class="hidden">DEPLOYING TO ISLAND...</div>
+      </div>
+    </div>
+
+    <div id="tab-armory" class="tab-content hidden">
+      <div class="panel-box">
+        <h2>WEAPONS ARMORY</h2>
+        <div id="armoryGrid" class="armory-grid"></div>
+      </div>
+    </div>
+
+    <div id="tab-profile" class="tab-content hidden">
+      <div class="panel-box">
+        <h2>SURVIVOR DOSSIER & UNLOCKED BADGES</h2>
+        <div class="profile-stats-grid">
+          <div class="p-stat"><span id="profLevel">1</span><label>LEVEL</label></div>
+          <div class="p-stat"><span id="profWins">0</span><label>BOOYAH WINS</label></div>
+          <div class="p-stat"><span id="profKills">0</span><label>TOTAL KILLS</label></div>
+          <div class="p-stat"><span id="profMatches">0</span><label>MATCHES</label></div>
+        </div>
+        <h3>ACHIEVEMENT BADGES</h3>
+        <div id="badgesGrid" class="badges-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IN-GAME HUD -->
+  <div id="gameHud" class="hidden">
+    <div class="minimap-wrap">
+      <canvas id="minimapCanvas" width="140" height="140"></canvas>
+      <div id="zoneWarning" class="zone-warning hidden">OUTSIDE SAFE ZONE!</div>
+    </div>
+
+    <div class="match-counters">
+      <div class="counter-box"><span class="label">ALIVE</span><strong id="aliveCount">16</strong></div>
+      <div class="counter-box"><span class="label">KILLS</span><strong id="matchKills">0</strong></div>
+    </div>
+
+    <div id="killFeed" class="kill-feed"></div>
+    <div id="crosshair" class="crosshair">+</div>
+    <div id="hitmarker" class="hitmarker hidden">✕</div>
+    <div id="sniperScope" class="sniper-scope hidden"></div>
+    <div id="lootPrompt" class="loot-prompt hidden">Press [F] / Tap to Pickup <span id="lootName">AK47</span></div>
+
+    <div id="pcControlsHint" class="pc-hint hidden">
+      [WASD] Move • [Mouse] Aim • [LMB] Fire • [RMB] Scope • [Space] Jump • [C] Crouch • [R] Reload • [G] Gloo Wall • [F] Loot • [1-3] Guns
+    </div>
+
+    <div class="bottom-hud">
+      <div class="bars-container">
+        <div class="bar-track armor-track"><div id="armorBar" class="bar-fill armor-fill" style="width: 100%"></div></div>
+        <div class="bar-track hp-track"><div id="hpBar" class="bar-fill hp-fill" style="width: 100%"></div><span id="hpText">HP 200/200</span></div>
+      </div>
+      <div class="weapon-slots">
+        <div class="w-slot active" id="slot0" onclick="selectWeaponSlot(0)">1: <span id="wName0">AK47</span> <small id="wAmmo0">30</small></div>
+        <div class="w-slot" id="slot1" onclick="selectWeaponSlot(1)">2: <span id="wName1">MP40</span> <small id="wAmmo1">24</small></div>
+        <div class="w-slot" id="slot2" onclick="selectWeaponSlot(2)">3: <span id="wName2">PAN</span> <small id="wAmmo2">∞</small></div>
+        <div class="w-slot gloo-slot" id="glooSlot" onclick="useGlooWall()">G: GLOO (<span id="glooCount">3</span>)</div>
+        <div class="w-slot med-slot" id="medSlot" onclick="useMedkit()">H: MED (<span id="medCount">2</span>)</div>
+      </div>
+    </div>
+
+    <div id="mobileControls" class="hidden">
+      <div id="joystickZone" class="joystick-zone">
+        <div id="joystickKnob" class="joystick-knob"></div>
+      </div>
+      <div class="touch-actions">
+        <button id="btnFire" class="touch-btn fire-btn">FIRE</button>
+        <button id="btnScope" class="touch-btn scope-btn">SCOPE</button>
+        <button id="btnGloo" class="touch-btn gloo-btn">GLOO</button>
+        <button id="btnJump" class="touch-btn jump-btn">JUMP</button>
+        <button id="btnCrouch" class="touch-btn crouch-btn">CROUCH</button>
+        <button id="btnReload" class="touch-btn reload-btn">RELOAD</button>
+        <button id="btnLoot" class="touch-btn loot-btn hidden">LOOT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOOYAH / RESULT OVERLAY -->
+  <div id="resultScreen" class="overlay-screen hidden">
+    <div class="result-card">
+      <h1 id="resultTitle" class="booyah-title">BOOYAH!</h1>
+      <p id="resultSubtitle">LAST SURVIVOR STANDING</p>
+      <div class="result-stats">
+        <div><span>ELIMINATIONS</span><strong id="resKills">0</strong></div>
+        <div><span>XP EARNED</span><strong id="resXp">+250 XP</strong></div>
+      </div>
+      <button id="backToLobbyBtn" class="btn-booyah-play">RETURN TO LOBBY</button>
+    </div>
+  </div>
+
+  <script src="firebase-config.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
