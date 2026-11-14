@@ -18,10 +18,10 @@ const BOT_NAMES = [
 ];
 const BOT_WEAPONS = ['AK47', 'M4A1', 'SCAR', 'MP40', 'M1887', 'AWM'];
 
-let rooms = {};
+const rooms = {};
 
 function getOrCreateRoom() {
-  for (let id in rooms) {
+  for (const id in rooms) {
     if (rooms[id].state === 'waiting' && Object.keys(rooms[id].players).length < TARGET_PLAYERS) {
       return rooms[id];
     }
@@ -351,3 +351,12 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     if (currentRoom && currentRoom.players[socket.id]) {
+delete currentRoom.players[socket.id];
+}
+});
+});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+console.log(AETHERDROP 3D Server running on port ${PORT});
+});
+// END OF SERVER.JS
