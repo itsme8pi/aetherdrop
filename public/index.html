@@ -3,19 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>AETHERDROP 3D - Battle Royale</title>
+  <title>AETHERDROP - Tactical Battle Royale</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cloudflare.com"></script>
   <script src="/socket.io/socket.io.js"></script>
+  <style>
+    #gameCanvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; display: block; }
+    #authScreen, #resultScreen { z-index: 9999; pointer-events: auto; }
+    #lobbyScreen { z-index: 100; pointer-events: none; background: radial-gradient(circle at center, transparent 35%, rgba(6,10,18,0.75) 100%); }
+    .lobby-top, .quick-stats-panel, .play-dock, .panel-box { pointer-events: auto; }
+    .gun-card {
+      background: linear-gradient(160deg, #1b2436, #0f1522);
+      border: 1px solid #334155; border-top: 3px solid #ff9d00;
+      border-radius: 10px; padding: 16px; transition: 0.2s;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+    .gun-card:hover { transform: translateY(-4px); border-color: #ffc400; }
+    .gun-art { height: 64px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); border-radius: 6px; margin-bottom: 10px; }
+    .stat-bar { height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; margin: 4px 0 8px; }
+    .stat-fill { height: 100%; background: linear-gradient(90deg, #ff8800, #ffc400); }
+    .armory-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important; gap: 16px !important; }
+  </style>
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
 
-  <!-- AUTH SCREEN -->
   <div id="authScreen" class="overlay-screen">
     <div class="auth-card">
       <div class="brand-badge">TACTICAL BATTLE ROYALE</div>
-      <h1>AETHERDROP <span>3D</span></h1>
+      <h1>AETHER<span>DROP</span></h1>
       <p class="subtitle">Zero-Download Island Survival</p>
       <input type="text" id="usernameInput" placeholder="Enter Username (e.g. DarkSeraph)" maxlength="16" />
       <input type="password" id="passwordInput" placeholder="Enter Password (min 6 chars)" />
@@ -28,7 +44,6 @@
     </div>
   </div>
 
-  <!-- MAIN LOBBY UI -->
   <div id="lobbyScreen" class="hidden">
     <div class="lobby-top">
       <div class="player-card">
@@ -66,14 +81,14 @@
 
     <div id="tab-armory" class="tab-content hidden">
       <div class="panel-box">
-        <h2>WEAPONS ARMORY</h2>
+        <h2 style="color:#ff9d00; letter-spacing:1px;">WEAPONS ARMORY</h2>
         <div id="armoryGrid" class="armory-grid"></div>
       </div>
     </div>
 
     <div id="tab-profile" class="tab-content hidden">
       <div class="panel-box">
-        <h2>SURVIVOR DOSSIER & UNLOCKED BADGES</h2>
+        <h2 style="color:#ff9d00;">SURVIVOR DOSSIER & BADGES</h2>
         <div class="profile-stats-grid">
           <div class="p-stat"><span id="profLevel">1</span><label>LEVEL</label></div>
           <div class="p-stat"><span id="profWins">0</span><label>BOOYAH WINS</label></div>
@@ -86,7 +101,6 @@
     </div>
   </div>
 
-  <!-- IN-GAME HUD -->
   <div id="gameHud" class="hidden">
     <div class="minimap-wrap">
       <canvas id="minimapCanvas" width="140" height="140"></canvas>
@@ -114,18 +128,16 @@
         <div class="bar-track hp-track"><div id="hpBar" class="bar-fill hp-fill" style="width: 100%"></div><span id="hpText">HP 200/200</span></div>
       </div>
       <div class="weapon-slots">
-        <div class="w-slot active" id="slot0" onclick="selectWeaponSlot(0)">1: <span id="wName0">AK47</span> <small id="wAmmo0">30</small></div>
-        <div class="w-slot" id="slot1" onclick="selectWeaponSlot(1)">2: <span id="wName1">MP40</span> <small id="wAmmo1">24</small></div>
-        <div class="w-slot" id="slot2" onclick="selectWeaponSlot(2)">3: <span id="wName2">PAN</span> <small id="wAmmo2">∞</small></div>
-        <div class="w-slot gloo-slot" id="glooSlot" onclick="useGlooWall()">G: GLOO (<span id="glooCount">3</span>)</div>
-        <div class="w-slot med-slot" id="medSlot" onclick="useMedkit()">H: MED (<span id="medCount">2</span>)</div>
+        <div class="w-slot active" id="slot0">1: <span id="wName0">AK47</span> <small id="wAmmo0">30</small></div>
+        <div class="w-slot" id="slot1">2: <span id="wName1">MP40</span> <small id="wAmmo1">24</small></div>
+        <div class="w-slot" id="slot2">3: <span id="wName2">PAN</span> <small id="wAmmo2">∞</small></div>
+        <div class="w-slot gloo-slot" id="glooSlot">G: GLOO (<span id="glooCount">3</span>)</div>
+        <div class="w-slot med-slot" id="medSlot">H: MED (<span id="medCount">2</span>)</div>
       </div>
     </div>
 
     <div id="mobileControls" class="hidden">
-      <div id="joystickZone" class="joystick-zone">
-        <div id="joystickKnob" class="joystick-knob"></div>
-      </div>
+      <div id="joystickZone" class="joystick-zone"><div id="joystickKnob" class="joystick-knob"></div></div>
       <div class="touch-actions">
         <button type="button" id="btnFire" class="touch-btn fire-btn">FIRE</button>
         <button type="button" id="btnScope" class="touch-btn scope-btn">SCOPE</button>
@@ -138,7 +150,6 @@
     </div>
   </div>
 
-  <!-- BOOYAH / RESULT OVERLAY -->
   <div id="resultScreen" class="overlay-screen hidden">
     <div class="result-card">
       <h1 id="resultTitle" class="booyah-title">BOOYAH!</h1>
@@ -154,12 +165,8 @@
   <script>
     const SafeStore = {
       mem: {},
-      get: function(k) {
-        try { return window.localStorage.getItem(k); } catch (e) { return this.mem[k] || null; }
-      },
-      set: function(k, v) {
-        try { window.localStorage.setItem(k, v); } catch (e) { this.mem[k] = v; }
-      }
+      get: function(k) { try { return window.localStorage.getItem(k); } catch (e) { return this.mem.hasOwnProperty(k) ? this.mem[k] : null; } },
+      set: function(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { this.mem[k] = v; } }
     };
 
     const PlayerDB = {
@@ -168,10 +175,10 @@
       signup: function(username, password) {
         const rawName = (username || '').trim();
         const clean = rawName.toLowerCase().replace(/[^a-z0-9_]/g, '');
-        if (clean.length < 3) throw new Error('Username must have at least 3 letters or numbers!');
-        if (!password || password.length < 6) throw new Error('Password must be at least 6 characters!');
+        if (clean.length < 3) throw new Error('Username min 3 letters/numbers!');
+        if (!password || password.length < 6) throw new Error('Password min 6 characters!');
         const key = 'ad_user_' + clean;
-        if (SafeStore.get(key)) throw new Error('Username already exists! Click LOGIN.');
+        if (SafeStore.get(key)) throw new Error('Username taken! Click LOGIN.');
         const data = { username: rawName, password: password, level: 1, xp: 0, kills: 0, wins: 0, matches: 0 };
         SafeStore.set(key, JSON.stringify(data));
         this.currentUser = { uid: clean, username: rawName };
@@ -182,47 +189,51 @@
         const clean = rawName.toLowerCase().replace(/[^a-z0-9_]/g, '');
         const key = 'ad_user_' + clean;
         const raw = SafeStore.get(key);
-        if (!raw) throw new Error('Account not found! Click SIGN UP first.');
+        if (!raw) throw new Error('Account not found! Click SIGN UP.');
         const data = JSON.parse(raw);
-        if (data.password !== password) throw new Error('Incorrect password!');
-        this.currentUser = { uid: clean, username: data.username };
-        this.stats = data;
-      },
-      guest: function() {
-        const guestName = 'Guest_' + Math.floor(1000 + Math.random() * 9000);
-        this.currentUser = { uid: 'guest', username: guestName };
-        this.stats = { level: 1, xp: 0, kills: 0, wins: 0, matches: 0 };
-      },
-      recordMatchResult: function(res) {
-        if (!this.currentUser) return 50;
-        const xp = res.kills * 40 + (res.isWin ? 200 : 50);
-        this.stats.kills += res.kills;
-        this.stats.matches += 1;
-        if (res.isWin) this.stats.wins += 1;
-        this.stats.xp += xp;
-        this.stats.level = Math.floor(this.stats.xp / 500) + 1;
-        if (this.currentUser.uid !== 'guest') {
-          SafeStore.set('ad_user_' + this.currentUser.uid, JSON.stringify(this.stats));
-        }
-        return xp;
-      }
-    };
-
-    const WEAPONS = {
-AK47: { name: 'AK47', type: 'AR', damage: 34, fireRate: 140, mag: 30, recoil: 0.035, range: 130, zoom: 55 },
-M4A1: { name: 'M4A1', type: 'AR', damage: 28, fireRate: 120, mag: 30, recoil: 0.018, range: 135, zoom: 55 },
-SCAR: { name: 'SCAR', type: 'AR', damage: 29, fireRate: 130, mag: 30, recoil: 0.016, range: 130, zoom: 55 },
-MP40: { name: 'MP40', type: 'SMG', damage: 22, fireRate: 75, mag: 24, recoil: 0.022, range: 65, zoom: 65 },
-M1887: { name: 'M1887', type: 'Shotgun', damage: 95, fireRate: 650, mag: 2, recoil: 0.06, range: 28, zoom: 70 },
-AWM: { name: 'AWM', type: 'Sniper', damage: 145, fireRate: 1100, mag: 5, recoil: 0.05, range: 220, zoom: 18 },
-DesertEagle: { name: 'Desert Eagle', type: 'Pistol', damage: 55, fireRate: 300, mag: 7, recoil: 0.03, range: 85, zoom: 65 },
-Pan: { name: 'Pan', type: 'Melee', damage: 80, fireRate: 400, mag: 999, recoil: 0, range: 4.5, zoom: 75 }
+if (data.password !== password) throw new Error('Wrong password!');
+this.currentUser = { uid: clean, username: data.username };
+this.stats = data;
+},
+guest: function() {
+this.currentUser = { uid: 'guest', username: 'Guest_' + Math.floor(1000 + Math.random() * 9000) };
+this.stats = { level: 1, xp: 0, kills: 0, wins: 0, matches: 0 };
+},
+recordMatchResult: function(res) {
+if (!this.currentUser) return 50;
+const xp = res.kills * 40 + (res.isWin ? 200 : 50);
+this.stats.kills += res.kills;
+this.stats.matches += 1;
+if (res.isWin) this.stats.wins += 1;
+this.stats.xp += xp;
+this.stats.level = Math.floor(this.stats.xp / 500) + 1;
+if (this.currentUser.uid !== 'guest') SafeStore.set('ad_user_' + this.currentUser.uid, JSON.stringify(this.stats));
+return xp;
+}
 };
+const WEAPONS = {
+AK47: { name: 'AK47', type: 'AR', damage: 34, fireRate: 140, mag: 30, recoil: 0.035, range: 130, zoom: 55, color: '#f59e0b' },
+M4A1: { name: 'M4A1', type: 'AR', damage: 28, fireRate: 120, mag: 30, recoil: 0.018, range: 135, zoom: 55, color: '#38bdf8' },
+SCAR: { name: 'SCAR', type: 'AR', damage: 29, fireRate: 130, mag: 30, recoil: 0.016, range: 130, zoom: 55, color: '#eab308' },
+MP40: { name: 'MP40', type: 'SMG', damage: 22, fireRate: 75, mag: 24, recoil: 0.022, range: 65, zoom: 65, color: '#a855f7' },
+M1887: { name: 'M1887', type: 'Shotgun', damage: 95, fireRate: 650, mag: 2, recoil: 0.06, range: 28, zoom: 70, color: '#ef4444' },
+AWM: { name: 'AWM', type: 'Sniper', damage: 145, fireRate: 1100, mag: 5, recoil: 0.05, range: 220, zoom: 18, color: '#22c55e' },
+DesertEagle: { name: 'Desert Eagle', type: 'Pistol', damage: 55, fireRate: 300, mag: 7, recoil: 0.03, range: 85, zoom: 65, color: '#94a3b8' },
+Pan: { name: 'Pan', type: 'Melee', damage: 80, fireRate: 400, mag: 999, recoil: 0, range: 4.5, zoom: 75, color: '#64748b' }
+};
+function getGunSvg(type, color) {
+if (type === 'Sniper') return '';
+if (type === 'Shotgun') return '';
+if (type === 'SMG') return '';
+if (type === 'Pistol') return '';
+if (type === 'Melee') return '';
+return '';
+}
 const BADGES = [
-{ id: 'first_blood', title: 'First Blood', desc: 'Get 1st elimination', check: function(s) { return s.kills >= 1; } },
-{ id: 'booyah_master', title: 'Booyah Champion', desc: 'Win 1st Battle Royale', check: function(s) { return s.wins >= 1; } },
-{ id: 'sharpshooter', title: 'Sharpshooter', desc: 'Reach 25 Total Kills', check: function(s) { return s.kills >= 25; } },
-{ id: 'veteran', title: 'Island Veteran', desc: 'Play 10 Matches', check: function(s) { return s.matches >= 10; } }
+{ title: 'First Blood', desc: 'Get 1st elimination', check: function(s) { return s.kills >= 1; } },
+{ title: 'Booyah Champion', desc: 'Win 1st Battle Royale', check: function(s) { return s.wins >= 1; } },
+{ title: 'Sharpshooter', desc: 'Reach 25 Total Kills', check: function(s) { return s.kills >= 25; } },
+{ title: 'Island Veteran', desc: 'Play 10 Matches', check: function(s) { return s.matches >= 10; } }
 ];
 function enterLobby() {
 document.getElementById('authScreen').classList.add('hidden');
@@ -242,7 +253,19 @@ document.getElementById('profWins').innerText = s.wins;
 document.getElementById('profKills').innerText = s.kills;
 document.getElementById('profMatches').innerText = s.matches;
 document.getElementById('armoryGrid').innerHTML = Object.values(WEAPONS).map(function(w) {
-return '' + w.name + ' (' + w.type + ')Damage: ' + w.damage + ' | Mag: ' + w.mag + 'Range: ' + w.range + 'm';
+const dmgPct = Math.min(100, Math.round((w.damage / 150) * 100));
+const rngPct = Math.min(100, Math.round((w.range / 220) * 100));
+return '' +
+'' + getGunSvg(w.type, w.color) + '' +
+'' +
+'' + w.name + '' +
+'' + w.type + '' +
+'' +
+'Damage: ' + w.damage + '' +
+'' +
+'Range: ' + w.range + 'm | Mag: ' + w.mag + '' +
+'' +
+'';
 }).join('');
 document.getElementById('badgesGrid').innerHTML = BADGES.map(function(b) {
 const unlocked = b.check(s);
@@ -250,35 +273,24 @@ return '' + (unlocked ? '🏆' : '🔒') + ' ' + b.title + '' + b.desc + '';
 }).join('');
 }
 document.getElementById('signupBtn').addEventListener('click', function() {
-try {
-PlayerDB.signup(document.getElementById('usernameInput').value, document.getElementById('passwordInput').value);
-enterLobby();
-} catch (err) {
-document.getElementById('authError').innerText = err.message;
-}
+try { PlayerDB.signup(document.getElementById('usernameInput').value, document.getElementById('passwordInput').value); enterLobby(); }
+catch (err) { document.getElementById('authError').innerText = err.message; }
 });
 document.getElementById('loginBtn').addEventListener('click', function() {
-try {
-PlayerDB.login(document.getElementById('usernameInput').value, document.getElementById('passwordInput').value);
-enterLobby();
-} catch (err) {
-document.getElementById('authError').innerText = err.message;
-}
+try { PlayerDB.login(document.getElementById('usernameInput').value, document.getElementById('passwordInput').value); enterLobby(); }
+catch (err) { document.getElementById('authError').innerText = err.message; }
 });
-document.getElementById('guestBtn').addEventListener('click', function() {
-PlayerDB.guest();
-enterLobby();
-});
+document.getElementById('guestBtn').addEventListener('click', function() { PlayerDB.guest(); enterLobby(); });
 document.getElementById('logoutBtn').addEventListener('click', function() { location.reload(); });
 document.querySelectorAll('.nav-tab').forEach(function(btn) {
 btn.addEventListener('click', function() {
 document.querySelectorAll('.nav-tab').forEach(function(b) { b.classList.remove('active'); });
 btn.classList.add('active');
-const target = btn.dataset.tab;
 document.querySelectorAll('.tab-content').forEach(function(tc) { tc.classList.add('hidden'); });
-document.getElementById('tab-' + target).classList.remove('hidden');
+document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
 });
 });
+// 3D Engine Setup
 const socket = io();
 const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 const canvas = document.getElementById('gameCanvas');
@@ -287,11 +299,11 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x6ec6ff);
-scene.fog = new THREE.FogExp2(0x87ceeb, 0.0045);
+scene.background = new THREE.Color(0x5bc0f8);
+scene.fog = new THREE.FogExp2(0x87ceeb, 0.004);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 450);
-scene.add(new THREE.HemisphereLight(0xffffff, 0x3b7a57, 0.85));
-const dirLight = new THREE.DirectionalLight(0xfff5e0, 1.1);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x3b7a57, 0.9));
+const dirLight = new THREE.DirectionalLight(0xfff5e0, 1.15);
 dirLight.position.set(80, 140, 60);
 dirLight.castShadow = true;
 scene.add(dirLight);
@@ -308,14 +320,13 @@ water.position.y = -0.4;
 scene.add(water);
 const buildingMat = new THREE.MeshStandardMaterial({ color: 0xd6cbb8, roughness: 0.8 });
 const roofMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.7 });
-const buildingSpots = [
-[-35, -30, 14, 9, 12],
-[45, -25, 16, 10, 14],
-[-25, 50, 12, 8, 12],
-[0, -75, 18, 9, 12],
-[-75, 15, 14, 10, 14],
-[80, -60, 12, 12, 12]
-];
+const b1 = new Array(-35, -30, 14, 9, 12);
+const b2 = new Array(45, -25, 16, 10, 14);
+const b3 = new Array(-25, 50, 12, 8, 12);
+const b4 = new Array(55, 55, 15, 11, 15);
+const b5 = new Array(0, -75, 18, 9, 12);
+const b6 = new Array(-75, 15, 14, 10, 14);
+const buildingSpots = new Array(b1, b2, b3, b4, b5, b6);
 buildingSpots.forEach(function(b) {
 const x = b.at(0), z = b.at(1), w = b.at(2), h = b.at(3), d = b.at(4);
 const bMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMat);
@@ -363,6 +374,9 @@ group.add(head);
 const legs = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 0.45), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
 legs.position.y = 0.3;
 group.add(legs);
+const gun = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 1.1), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+gun.position.set(0.55, 1.3, 0.45);
+group.add(gun);
 return group;
 }
 const lobbyAvatar = createCharacterMesh(0xff8800);
@@ -371,7 +385,7 @@ let gameState = 'LOBBY';
 const localPlayer = {
 x: 0, y: 0, z: 0, vy: 0, rotY: 0, pitch: 0,
 hp: 200, armor: 100, kills: 0, crouching: false, scoped: false,
-slots: [{ key: 'AK47', ammo: 30 }, { key: 'MP40', ammo: 24 }, { key: 'Pan', ammo: 999 }],
+slots: new Array({ key: 'AK47', ammo: 30 }, { key: 'MP40', ammo: 24 }, { key: 'Pan', ammo: 999 }),
 activeSlot: 0, glooCount: 3, medCount: 2, lastShot: 0
 };
 const remoteMeshes = {};
@@ -382,6 +396,43 @@ let nearbyLoot = null;
 const keys = {};
 let joyVec = { x: 0, y: 0 };
 let isFiringTouch = false;
+function selectWeaponSlot(idx) {
+localPlayer.activeSlot = idx;
+localPlayer.scoped = false;
+camera.fov = 75;
+camera.updateProjectionMatrix();
+document.getElementById('sniperScope').classList.add('hidden');
+document.querySelectorAll('.w-slot').forEach(function(el, i) { el.classList.toggle('active', i === idx); });
+}
+function toggleScope() {
+const wSpec = WEAPONS[localPlayer.slots.at(localPlayer.activeSlot).key];
+localPlayer.scoped = !localPlayer.scoped;
+camera.fov = localPlayer.scoped ? wSpec.zoom : 75;
+camera.updateProjectionMatrix();
+document.getElementById('sniperScope').classList.toggle('hidden', !(wSpec.name === 'AWM' && localPlayer.scoped));
+}
+function reloadWeapon() {
+const slot = localPlayer.slots.at(localPlayer.activeSlot);
+slot.ammo = WEAPONS[slot.key].mag;
+updateHudBars();
+}
+function useGlooWall() {
+if (localPlayer.glooCount <= 0) return;
+localPlayer.glooCount--;
+socket.emit('deployGloo', { x: localPlayer.x - Math.sin(localPlayer.rotY) * 3.2, z: localPlayer.z - Math.cos(localPlayer.rotY) * 3.2, rotY: localPlayer.rotY });
+updateHudBars();
+}
+function useMedkit() {
+if (localPlayer.medCount <= 0 || localPlayer.hp >= 200) return;
+localPlayer.medCount--;
+localPlayer.hp = Math.min(200, localPlayer.hp + 75);
+updateHudBars();
+}
+document.getElementById('slot0').addEventListener('click', function() { selectWeaponSlot(0); });
+document.getElementById('slot1').addEventListener('click', function() { selectWeaponSlot(1); });
+document.getElementById('slot2').addEventListener('click', function() { selectWeaponSlot(2); });
+document.getElementById('glooSlot').addEventListener('click', useGlooWall);
+document.getElementById('medSlot').addEventListener('click', useMedkit);
 window.addEventListener('keydown', function(e) {
 keys[e.code] = true;
 if (gameState !== 'PLAYING') return;
@@ -414,11 +465,11 @@ document.getElementById('mobileControls').classList.remove('hidden');
 const joyZone = document.getElementById('joystickZone');
 const joyKnob = document.getElementById('joystickKnob');
 let joyTouchId = null;
-joyZone.addEventListener('touchstart', function(e) { e.preventDefault(); joyTouchId = e.changedTouches.identifier; });
+joyZone.addEventListener('touchstart', function(e) { e.preventDefault(); joyTouchId = e.changedTouches.item(0).identifier; });
 joyZone.addEventListener('touchmove', function(e) {
 e.preventDefault();
 for (let i = 0; i < e.changedTouches.length; i++) {
-const t = e.changedTouches[i];
+const t = e.changedTouches.item(i);
 if (t.identifier === joyTouchId) {
 const rect = joyZone.getBoundingClientRect();
 const dx = Math.max(-40, Math.min(40, t.clientX - (rect.left + rect.width / 2)));
@@ -431,10 +482,10 @@ joyVec.y = dy / 40;
 });
 joyZone.addEventListener('touchend', function() { joyTouchId = null; joyKnob.style.transform = 'translate(0px, 0px)'; joyVec = { x: 0, y: 0 }; });
 let lastTouchX = null;
-canvas.addEventListener('touchstart', function(e) { if (e.touches.clientX > window.innerWidth * 0.35) lastTouchX = e.touches.clientX; });
+canvas.addEventListener('touchstart', function(e) { const t = e.touches.item(0); if (t && t.clientX > window.innerWidth * 0.35) lastTouchX = t.clientX; });
 canvas.addEventListener('touchmove', function(e) {
-const t = e.touches;
-if (t.clientX > window.innerWidth * 0.35 && lastTouchX !== null) { localPlayer.rotY -= (t.clientX - lastTouchX) * 0.008; lastTouchX = t.clientX; }
+const t = e.touches.item(0);
+if (t && t.clientX > window.innerWidth * 0.35 && lastTouchX !== null) { localPlayer.rotY -= (t.clientX - lastTouchX) * 0.008; lastTouchX = t.clientX; }
 });
 document.getElementById('btnFire').addEventListener('touchstart', function(e) { e.preventDefault(); isFiringTouch = true; fireWeapon(); });
 document.getElementById('btnFire').addEventListener('touchend', function() { isFiringTouch = false; });
@@ -445,41 +496,9 @@ document.getElementById('btnCrouch').addEventListener('touchstart', function(e) 
 document.getElementById('btnReload').addEventListener('touchstart', function(e) { e.preventDefault(); reloadWeapon(); });
 document.getElementById('btnLoot').addEventListener('touchstart', function(e) { e.preventDefault(); pickupNearbyLoot(); });
 }
-function selectWeaponSlot(idx) {
-localPlayer.activeSlot = idx;
-localPlayer.scoped = false;
-camera.fov = 75;
-camera.updateProjectionMatrix();
-document.getElementById('sniperScope').classList.add('hidden');
-document.querySelectorAll('.w-slot').forEach(function(el, i) { el.classList.toggle('active', i === idx); });
-}
-function toggleScope() {
-const wSpec = WEAPONS[localPlayer.slots[localPlayer.activeSlot].key];
-localPlayer.scoped = !localPlayer.scoped;
-camera.fov = localPlayer.scoped ? wSpec.zoom : 75;
-camera.updateProjectionMatrix();
-document.getElementById('sniperScope').classList.toggle('hidden', !(wSpec.name === 'AWM' && localPlayer.scoped));
-}
-function reloadWeapon() {
-const slot = localPlayer.slots[localPlayer.activeSlot];
-slot.ammo = WEAPONS[slot.key].mag;
-updateHudBars();
-}
-function useGlooWall() {
-if (localPlayer.glooCount <= 0) return;
-localPlayer.glooCount--;
-socket.emit('deployGloo', { x: localPlayer.x - Math.sin(localPlayer.rotY) * 3.2, z: localPlayer.z - Math.cos(localPlayer.rotY) * 3.2, rotY: localPlayer.rotY });
-updateHudBars();
-}
-function useMedkit() {
-if (localPlayer.medCount <= 0 || localPlayer.hp >= 200) return;
-localPlayer.medCount--;
-localPlayer.hp = Math.min(200, localPlayer.hp + 75);
-updateHudBars();
-}
 function fireWeapon() {
 const now = performance.now();
-const slot = localPlayer.slots[localPlayer.activeSlot];
+const slot = localPlayer.slots.at(localPlayer.activeSlot);
 const spec = WEAPONS[slot.key];
 if (now - localPlayer.lastShot < spec.fireRate) return;
 if (slot.ammo <= 0) { reloadWeapon(); return; }
@@ -493,7 +512,7 @@ raycaster.far = spec.range;
 let hitId = null;
 const intersects = raycaster.intersectObjects(Object.values(remoteMeshes), true);
 if (intersects.length > 0) {
-let obj = intersects.object;
+let obj = intersects.at(0).object;
 while (obj.parent && !obj.userData.fighterId) obj = obj.parent;
 if (obj.userData.fighterId) hitId = obj.userData.fighterId;
 }
@@ -518,7 +537,7 @@ function pickupNearbyLoot() {
 if (!nearbyLoot) return;
 socket.emit('pickupLoot', { lootId: nearbyLoot.id });
 const t = nearbyLoot.type;
-if (WEAPONS[t]) { localPlayer.slots = { key: t, ammo: WEAPONS[t].mag }; selectWeaponSlot(0); }
+if (WEAPONS[t]) { localPlayer.slots.at(0).key = t; localPlayer.slots.at(0).ammo = WEAPONS[t].mag; selectWeaponSlot(0); }
 else if (t === 'MEDKIT') localPlayer.medCount++;
 else if (t === 'GLOO') localPlayer.glooCount++;
 else if (t === 'AMMO') reloadWeapon();
@@ -528,10 +547,10 @@ function updateHudBars() {
 document.getElementById('hpBar').style.width = Math.max(0, (localPlayer.hp / 200) * 100) + '%';
 document.getElementById('hpText').innerText = 'HP ' + Math.ceil(localPlayer.hp) + '/200';
 document.getElementById('armorBar').style.width = Math.max(0, localPlayer.armor) + '%';
-document.getElementById('wName0').innerText = localPlayer.slots.key;
-document.getElementById('wAmmo0').innerText = localPlayer.slots.ammo;
-document.getElementById('wName1').innerText = localPlayer.slots.key;
-document.getElementById('wAmmo1').innerText = localPlayer.slots.ammo;
+document.getElementById('wName0').innerText = localPlayer.slots.at(0).key;
+document.getElementById('wAmmo0').innerText = localPlayer.slots.at(0).ammo;
+document.getElementById('wName1').innerText = localPlayer.slots.at(1).key;
+document.getElementById('wAmmo1').innerText = localPlayer.slots.at(1).ammo;
 document.getElementById('glooCount').innerText = localPlayer.glooCount;
 document.getElementById('medCount').innerText = localPlayer.medCount;
 }
@@ -555,6 +574,7 @@ document.getElementById('backToLobbyBtn').addEventListener('click', function() {
 socket.on('matchStarted', function(data) {
 gameState = 'PLAYING';
 lobbyAvatar.visible = false;
+canvas.style.pointerEvents = 'auto';
 document.getElementById('lobbyScreen').classList.add('hidden');
 document.getElementById('gameHud').classList.remove('hidden');
 initMobileControls();
@@ -635,20 +655,20 @@ lobbyAvatar.rotation.y += 0.8 * dt;
 camera.position.set(0, 1.8, 4.2);
 camera.lookAt(0, 1.2, 0);
 } else if (gameState === 'PLAYING') {
-const forward = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0) - joyVec.y;
-const strafe = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0) + joyVec.x;
-const speed = (keys['ShiftLeft'] ? 11 : 7.5) * (localPlayer.crouching ? 0.55 : 1);
+const forward = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) - joyVec.y;
+const strafe = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + joyVec.x;
+const speed = (keys.ShiftLeft ? 11 : 7.5) * (localPlayer.crouching ? 0.55 : 1);
 const sin = Math.sin(localPlayer.rotY);
 const cos = Math.cos(localPlayer.rotY);
 const nextX = localPlayer.x + (-sin * forward + cos * strafe) * speed * dt;
 const nextZ = localPlayer.z + (-cos * forward - sin * strafe) * speed * dt;
 let blocked = false;
 for (let i = 0; i < colliders.length; i++) {
-const c = colliders[i];
+const c = colliders.at(i);
 if (Math.abs(nextX - c.x) < c.hw && Math.abs(nextZ - c.z) < c.hd) { blocked = true; break; }
 }
 if (!blocked) { localPlayer.x = Math.max(-185, Math.min(185, nextX)); localPlayer.z = Math.max(-185, Math.min(185, nextZ)); }
-if (keys['Space'] && localPlayer.y <= 0.05) localPlayer.vy = 8.5;
+if (keys.Space && localPlayer.y <= 0.05) localPlayer.vy = 8.5;
 localPlayer.vy -= 22 * dt;
 localPlayer.y = Math.max(0, localPlayer.y + localPlayer.vy * dt);
 camera.position.set(localPlayer.x, localPlayer.y + (localPlayer.crouching ? 1.1 : 1.75), localPlayer.z);
@@ -664,11 +684,11 @@ if (item.active && Math.hypot(item.x - localPlayer.x, item.z - localPlayer.z) < 
 document.getElementById('lootPrompt').classList.toggle('hidden', !nearbyLoot);
 if (isMobile) document.getElementById('btnLoot').classList.toggle('hidden', !nearbyLoot);
 if (nearbyLoot) document.getElementById('lootName').innerText = nearbyLoot.type;
-socket.emit('playerMove', { x: localPlayer.x, y: localPlayer.y, z: localPlayer.z, rotY: localPlayer.rotY + Math.PI, weapon: localPlayer.slots[localPlayer.activeSlot].key, crouching: localPlayer.crouching });
+socket.emit('playerMove', { x: localPlayer.x, y: localPlayer.y, z: localPlayer.z, rotY: localPlayer.rotY + Math.PI, weapon: localPlayer.slots.at(localPlayer.activeSlot).key, crouching: localPlayer.crouching });
 renderMinimap();
 }
 for (let i = bulletTracers.length - 1; i >= 0; i--) {
-const b = bulletTracers[i];
+const b = bulletTracers.at(i);
 b.mesh.position.x += b.vx * dt;
 b.mesh.position.z += b.vz * dt;
 b.life -= dt;
@@ -682,6 +702,6 @@ camera.aspect = window.innerWidth / window.innerHeight;
 camera.updateProjectionMatrix();
 renderer.setSize(window.innerWidth, window.innerHeight);
 });
-</script>
-</body>
-  </html>
+</script
+    </body>
+    </html>
