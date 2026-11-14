@@ -1,4 +1,4 @@
-javascript
+```javascript
 const socket = io();
 
 const WEAPONS = {
@@ -167,10 +167,10 @@ const localPlayer = {
   lastShot: 0
 };
 
-let remoteMeshes = {};
-let lootMeshes = {};
-let glooMeshes = [];
-let bulletTracers = [];
+const remoteMeshes = {};
+const lootMeshes = {};
+const glooMeshes = [];
+const bulletTracers = [];
 let currentZone = { x: 0, z: 0, radius: 180 };
 let nearbyLoot = null;
 
@@ -235,7 +235,7 @@ function initMobileControls() {
         const cy = rect.top + rect.height / 2;
         const dx = Math.max(-40, Math.min(40, t.clientX - cx));
         const dy = Math.max(-40, Math.min(40, t.clientY - cy));
-        joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+        joyKnob.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
         joyVec.x = dx / 40;
         joyVec.y = dy / 40;
       }
@@ -264,7 +264,7 @@ function initMobileControls() {
   document.getElementById('btnFire').addEventListener('touchend', () => { isFiringTouch = false; });
   document.getElementById('btnScope').addEventListener('touchstart', (e) => { e.preventDefault(); toggleScope(); });
   document.getElementById('btnGloo').addEventListener('touchstart', (e) => { e.preventDefault(); useGlooWall(); });
-document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); if (localPlayer.y <= 0.05) localPlayer.vy = 8.5; });
+  document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); if (localPlayer.y <= 0.05) localPlayer.vy = 8.5; });
 document.getElementById('btnCrouch').addEventListener('touchstart', (e) => { e.preventDefault(); localPlayer.crouching = !localPlayer.crouching; });
 document.getElementById('btnReload').addEventListener('touchstart', (e) => { e.preventDefault(); reloadWeapon(); });
 document.getElementById('btnLoot').addEventListener('touchstart', (e) => { e.preventDefault(); pickupNearbyLoot(); });
@@ -376,9 +376,9 @@ reloadWeapon();
 updateHudBars();
 }
 function updateHudBars() {
-document.getElementById('hpBar').style.width = ${Math.max(0, (localPlayer.hp / 200) * 100)}%;
-document.getElementById('hpText').innerText = HP ${Math.ceil(localPlayer.hp)}/200;
-document.getElementById('armorBar').style.width = ${Math.max(0, localPlayer.armor)}%;
+document.getElementById('hpBar').style.width = Math.max(0, (localPlayer.hp / 200) * 100) + '%';
+document.getElementById('hpText').innerText = 'HP ' + Math.ceil(localPlayer.hp) + '/200';
+document.getElementById('armorBar').style.width = Math.max(0, localPlayer.armor) + '%';
 document.getElementById('wName0').innerText = localPlayer.slots[0].key;
 document.getElementById('wAmmo0').innerText = localPlayer.slots[0].ammo;
 document.getElementById('wName1').innerText = localPlayer.slots[1].key;
@@ -491,7 +491,7 @@ socket.on('playerEliminated', (ev) => {
 const feed = document.getElementById('killFeed');
 const div = document.createElement('div');
 div.className = 'kill-msg';
-div.innerText = ${ev.killerName} 🔫 ${ev.victimName};
+div.innerText = ev.killerName + ' eliminated ' + ev.victimName;
 feed.prepend(div);
 setTimeout(() => div.remove(), 4000);
 });
@@ -510,7 +510,7 @@ document.getElementById('resultTitle').style.color = isWin ? '#ffc400' : '#ef444
 document.getElementById('resultSubtitle').innerText = isWin ? 'LAST SURVIVOR STANDING' : 'BETTER LUCK NEXT DROP';
 document.getElementById('resKills').innerText = localPlayer.kills;
 const xp = await PlayerDB.recordMatchResult({ kills: localPlayer.kills, isWin });
-document.getElementById('resXp').innerText = +${xp || 50} XP;
+document.getElementById('resXp').innerText = '+' + (xp || 50) + ' XP';
 refreshLobbyUI();
 }
 const clock = new THREE.Clock();
@@ -585,9 +585,9 @@ renderer.render(scene, camera);
 animate();
 function refreshLobbyUI() {
 const s = PlayerDB.stats;
-document.getElementById('displayUsername').innerText = (PlayerDB.currentUser?.username || 'SURVIVOR').toUpperCase();
+document.getElementById('displayUsername').innerText = (PlayerDB.currentUser ? PlayerDB.currentUser.username : 'SURVIVOR').toUpperCase();
 document.getElementById('statLevel').innerText = s.level;
-document.getElementById('xpFill').style.width = ${(s.xp % 500) / 5}%;
+document.getElementById('xpFill').style.width = ((s.xp % 500) / 5) + '%';
 document.getElementById('quickWins').innerText = s.wins;
 document.getElementById('quickKills').innerText = s.kills;
 document.getElementById('quickMatches').innerText = s.matches;
@@ -596,11 +596,17 @@ document.getElementById('profWins').innerText = s.wins;
 document.getElementById('profKills').innerText = s.kills;
 document.getElementById('profMatches').innerText = s.matches;
 const armoryGrid = document.getElementById('armoryGrid');
-armoryGrid.innerHTML = Object.values(WEAPONS).map((w) => <div class="gun-card"> <h4>${w.name} (${w.type})</h4> <p>Damage: <strong>${w.damage}</strong> | Mag: <strong>${w.mag}</strong></p> <p>Range: <strong>${w.range}m</strong></p> </div>).join('');
+armoryGrid.innerHTML = Object.values(WEAPONS).map((w) =>
+'' + w.name + ' (' + w.type + ')' +
+'Damage: ' + w.damage + ' | Mag: ' + w.mag + '' +
+'Range: ' + w.range + 'm'
+).join('');
 const badgesGrid = document.getElementById('badgesGrid');
 badgesGrid.innerHTML = BADGES.map((b) => {
 const unlocked = b.check(s);
-return <div class="badge-card ${unlocked ? 'unlocked' : ''}"> <h4>${unlocked ? '🏆' : '🔒'} ${b.title}</h4> <p>${b.desc}</p> </div>;
+return '' +
+'' + (unlocked ? '🏆' : '🔒') + ' ' + b.title + '' +
+'' + b.desc + '';
 }).join('');
 }
 document.getElementById('signupBtn').onclick = async () => {
@@ -642,7 +648,7 @@ document.getElementById('tab-' + target).classList.remove('hidden');
 document.getElementById('playBtn').onclick = () => {
 document.getElementById('playBtn').classList.add('hidden');
 document.getElementById('matchmakingStatus').classList.remove('hidden');
-socket.emit('findMatch', { username: PlayerDB.currentUser?.username });
+socket.emit('findMatch', { username: PlayerDB.currentUser ? PlayerDB.currentUser.username : 'Survivor' });
 };
 document.getElementById('backToLobbyBtn').onclick = () => location.reload();
 window.addEventListener('resize', () => {
@@ -650,4 +656,3 @@ camera.aspect = window.innerWidth / window.innerHeight;
 camera.updateProjectionMatrix();
 renderer.setSize(window.innerWidth, window.innerHeight);
 });
-// END OF GAME.JS
