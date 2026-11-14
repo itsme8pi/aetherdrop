@@ -317,7 +317,7 @@ const buildingSpots = [
 [80, -60, 12, 12, 12]
 ];
 buildingSpots.forEach(function(b) {
-const x = b, z = b, w = b, h = b, d = b;
+const x = b.at(0), z = b.at(1), w = b.at(2), h = b.at(3), d = b.at(4);
 const bMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMat);
 bMesh.position.set(x, h / 2, z);
 bMesh.castShadow = true;
