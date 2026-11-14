@@ -23,6 +23,7 @@
         <button id="loginBtn" type="button" class="btn-primary">LOGIN</button>
         <button id="signupBtn" type="button" class="btn-secondary">SIGN UP</button>
       </div>
+      <button id="guestBtn" type="button" class="btn-booyah-play" style="width:100%; margin-top:12px; font-size:15px; padding:12px;">⚡ PLAY AS GUEST (INSTANT)</button>
       <p id="authError" class="error-text"></p>
     </div>
   </div>
@@ -59,7 +60,7 @@
           <span class="map-name">AETHER ISLAND • 16 FIGHTERS</span>
         </div>
         <button type="button" id="playBtn" class="btn-booyah-play">START MATCH</button>
-        <div id="matchmakingStatus" class="hidden">DEPLOYING TO ISLAND...</div>
+        <div id="matchmakingStatus" class="hidden" style="color:#ffc400; font-weight:800; margin-top:8px;">DEPLOYING TO ISLAND...</div>
       </div>
     </div>
 
@@ -151,30 +152,46 @@
   </div>
 
   <script>
-    // Account Persistence System
+    const SafeStore = {
+      mem: {},
+      get: function(k) {
+        try { return window.localStorage.getItem(k); } catch (e) { return this.mem[k] || null; }
+      },
+      set: function(k, v) {
+        try { window.localStorage.setItem(k, v); } catch (e) { this.mem[k] = v; }
+      }
+    };
+
     const PlayerDB = {
       currentUser: null,
       stats: { level: 1, xp: 0, kills: 0, wins: 0, matches: 0 },
       signup: function(username, password) {
-        const clean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-        if (clean.length < 3) throw new Error("Username min 3 letters/numbers!");
-        if (password.length < 6) throw new Error("Password min 6 characters!");
+        const rawName = (username || '').trim();
+        const clean = rawName.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        if (clean.length < 3) throw new Error('Username must have at least 3 letters or numbers!');
+        if (!password || password.length < 6) throw new Error('Password must be at least 6 characters!');
         const key = 'ad_user_' + clean;
-        if (localStorage.getItem(key)) throw new Error("Username taken! Click LOGIN.");
-        const data = { username: username.trim(), password: password, level: 1, xp: 0, kills: 0, wins: 0, matches: 0 };
-        localStorage.setItem(key, JSON.stringify(data));
-        this.currentUser = { uid: clean, username: username.trim() };
+        if (SafeStore.get(key)) throw new Error('Username already exists! Click LOGIN.');
+        const data = { username: rawName, password: password, level: 1, xp: 0, kills: 0, wins: 0, matches: 0 };
+        SafeStore.set(key, JSON.stringify(data));
+        this.currentUser = { uid: clean, username: rawName };
         this.stats = data;
       },
       login: function(username, password) {
-        const clean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+        const rawName = (username || '').trim();
+        const clean = rawName.toLowerCase().replace(/[^a-z0-9_]/g, '');
         const key = 'ad_user_' + clean;
-        const raw = localStorage.getItem(key);
-        if (!raw) throw new Error("Account not found. Click SIGN UP!");
+        const raw = SafeStore.get(key);
+        if (!raw) throw new Error('Account not found! Click SIGN UP first.');
         const data = JSON.parse(raw);
-        if (data.password !== password) throw new Error("Wrong password!");
+        if (data.password !== password) throw new Error('Incorrect password!');
         this.currentUser = { uid: clean, username: data.username };
         this.stats = data;
+      },
+      guest: function() {
+        const guestName = 'Guest_' + Math.floor(1000 + Math.random() * 9000);
+        this.currentUser = { uid: 'guest', username: guestName };
+        this.stats = { level: 1, xp: 0, kills: 0, wins: 0, matches: 0 };
       },
       recordMatchResult: function(res) {
         if (!this.currentUser) return 50;
@@ -184,19 +201,21 @@
         if (res.isWin) this.stats.wins += 1;
         this.stats.xp += xp;
         this.stats.level = Math.floor(this.stats.xp / 500) + 1;
-        localStorage.setItem('ad_user_' + this.currentUser.uid, JSON.stringify(this.stats));
+        if (this.currentUser.uid !== 'guest') {
+          SafeStore.set('ad_user_' + this.currentUser.uid, JSON.stringify(this.stats));
+        }
         return xp;
       }
     };
 
     const WEAPONS = {
-      AK47: { name: 'AK47', type: 'AR', damage: 34, fireRate: 140, mag: 30, recoil: 0.035, range: 130, zoom: 55 },
-      M4A1: { name: 'M4A1', type: 'AR', damage: 28, fireRate: 120, mag: 30, recoil: 0.018, range: 135, zoom: 55 },
-      SCAR: { name: 'SCAR', type: 'AR', damage: 29, fireRate: 130, mag: 30, recoil: 0.016, range: 130, zoom: 55 },
-      MP40: { name: 'MP40', type: 'SMG', damage: 22, fireRate: 75, mag: 24, recoil: 0.022, range: 65, zoom: 65 },
-      M1887: { name: 'M1887', type: 'Shotgun', damage: 95, fireRate: 650, mag: 2, recoil: 0.06, range: 28, zoom: 70 },
-      AWM: { name: 'AWM', type: 'Sniper', damage: 145, fireRate: 1100, mag: 5, recoil: 0.05, range: 220, zoom: 18 },
-      DesertEagle: { name: 'Desert Eagle', type: 'Pistol', damage: 55, fireRate: 300, mag: 7, recoil: 0.03, range: 85, zoom: 65 },
+AK47: { name: 'AK47', type: 'AR', damage: 34, fireRate: 140, mag: 30, recoil: 0.035, range: 130, zoom: 55 },
+M4A1: { name: 'M4A1', type: 'AR', damage: 28, fireRate: 120, mag: 30, recoil: 0.018, range: 135, zoom: 55 },
+SCAR: { name: 'SCAR', type: 'AR', damage: 29, fireRate: 130, mag: 30, recoil: 0.016, range: 130, zoom: 55 },
+MP40: { name: 'MP40', type: 'SMG', damage: 22, fireRate: 75, mag: 24, recoil: 0.022, range: 65, zoom: 65 },
+M1887: { name: 'M1887', type: 'Shotgun', damage: 95, fireRate: 650, mag: 2, recoil: 0.06, range: 28, zoom: 70 },
+AWM: { name: 'AWM', type: 'Sniper', damage: 145, fireRate: 1100, mag: 5, recoil: 0.05, range: 220, zoom: 18 },
+DesertEagle: { name: 'Desert Eagle', type: 'Pistol', damage: 55, fireRate: 300, mag: 7, recoil: 0.03, range: 85, zoom: 65 },
 Pan: { name: 'Pan', type: 'Melee', damage: 80, fireRate: 400, mag: 999, recoil: 0, range: 4.5, zoom: 75 }
 };
 const BADGES = [
@@ -205,6 +224,11 @@ const BADGES = [
 { id: 'sharpshooter', title: 'Sharpshooter', desc: 'Reach 25 Total Kills', check: function(s) { return s.kills >= 25; } },
 { id: 'veteran', title: 'Island Veteran', desc: 'Play 10 Matches', check: function(s) { return s.matches >= 10; } }
 ];
+function enterLobby() {
+document.getElementById('authScreen').classList.add('hidden');
+document.getElementById('lobbyScreen').classList.remove('hidden');
+refreshLobbyUI();
+}
 function refreshLobbyUI() {
 const s = PlayerDB.stats;
 document.getElementById('displayUsername').innerText = (PlayerDB.currentUser ? PlayerDB.currentUser.username : 'SURVIVOR').toUpperCase();
@@ -225,35 +249,35 @@ const unlocked = b.check(s);
 return '' + (unlocked ? '🏆' : '🔒') + ' ' + b.title + '' + b.desc + '';
 }).join('');
 }
-document.getElementById('signupBtn').onclick = function() {
+document.getElementById('signupBtn').addEventListener('click', function() {
 try {
 PlayerDB.signup(document.getElementById('usernameInput').value, document.getElementById('passwordInput').value);
-document.getElementById('authScreen').classList.add('hidden');
-document.getElementById('lobbyScreen').classList.remove('hidden');
-refreshLobbyUI();
+enterLobby();
 } catch (err) {
 document.getElementById('authError').innerText = err.message;
 }
-};
-document.getElementById('loginBtn').onclick = function() {
+});
+document.getElementById('loginBtn').addEventListener('click', function() {
 try {
 PlayerDB.login(document.getElementById('usernameInput').value, document.getElementById('passwordInput').value);
-document.getElementById('authScreen').classList.add('hidden');
-document.getElementById('lobbyScreen').classList.remove('hidden');
-refreshLobbyUI();
+enterLobby();
 } catch (err) {
 document.getElementById('authError').innerText = err.message;
 }
-};
-document.getElementById('logoutBtn').onclick = function() { location.reload(); };
+});
+document.getElementById('guestBtn').addEventListener('click', function() {
+PlayerDB.guest();
+enterLobby();
+});
+document.getElementById('logoutBtn').addEventListener('click', function() { location.reload(); });
 document.querySelectorAll('.nav-tab').forEach(function(btn) {
-btn.onclick = function() {
+btn.addEventListener('click', function() {
 document.querySelectorAll('.nav-tab').forEach(function(b) { b.classList.remove('active'); });
 btn.classList.add('active');
 const target = btn.dataset.tab;
 document.querySelectorAll('.tab-content').forEach(function(tc) { tc.classList.add('hidden'); });
 document.getElementById('tab-' + target).classList.remove('hidden');
-};
+});
 });
 const socket = io();
 const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
@@ -285,13 +309,13 @@ scene.add(water);
 const buildingMat = new THREE.MeshStandardMaterial({ color: 0xd6cbb8, roughness: 0.8 });
 const roofMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.7 });
 const buildingSpots = [
-[-35, -30, 14, 9],
+[-35, -30, 14, 9, 12],
 [45, -25, 16, 10, 14],
-[-25, 50, 8],
-[55, 55, 15, 11, 15],
-[0, -75, 18, 9],
+[-25, 50, 12, 8, 12],
+,
+[0, -75, 18, 9, 12],
 [-75, 15, 14, 10, 14],
-[80, -60]
+[80, -60, 12, 12, 12]
 ];
 buildingSpots.forEach(function(b) {
 const x = b, z = b, w = b, h = b, d = b;
@@ -523,12 +547,12 @@ ctx.beginPath(); ctx.arc(70 + currentZone.x * scale, 70 + currentZone.z * scale,
 ctx.fillStyle = '#ff9d00';
 ctx.beginPath(); ctx.arc(70 + localPlayer.x * scale, 70 + localPlayer.z * scale, 3.5, 0, Math.PI * 2); ctx.fill();
 }
-document.getElementById('playBtn').onclick = function() {
+document.getElementById('playBtn').addEventListener('click', function() {
 document.getElementById('playBtn').classList.add('hidden');
 document.getElementById('matchmakingStatus').classList.remove('hidden');
 socket.emit('findMatch', { username: PlayerDB.currentUser ? PlayerDB.currentUser.username : 'Survivor' });
-};
-document.getElementById('backToLobbyBtn').onclick = function() { location.reload(); };
+});
+document.getElementById('backToLobbyBtn').addEventListener('click', function() { location.reload(); });
 socket.on('matchStarted', function(data) {
 gameState = 'PLAYING';
 lobbyAvatar.visible = false;
