@@ -1,4 +1,4 @@
-```javascript
+javascript
 const socket = io();
 
 const WEAPONS = {
@@ -265,7 +265,8 @@ function initMobileControls() {
   document.getElementById('btnScope').addEventListener('touchstart', (e) => { e.preventDefault(); toggleScope(); });
   document.getElementById('btnGloo').addEventListener('touchstart', (e) => { e.preventDefault(); useGlooWall(); });
   document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); if (localPlayer.y <= 0.05) localPlayer.vy = 8.5; });
-document.getElementById('btnCrouch').addEventListener('touchstart', (e) => { e.preventDefault(); localPlayer.crouching = !localPlayer.crouching; });
+  document.getElementById('btnCrouch').addEventListener('touchstart', (e) => { e.preventDefault(); localPlayer.crouching = !localPlayer.crouching; });
+Use code with caution.
 document.getElementById('btnReload').addEventListener('touchstart', (e) => { e.preventDefault(); reloadWeapon(); });
 document.getElementById('btnLoot').addEventListener('touchstart', (e) => { e.preventDefault(); pickupNearbyLoot(); });
 }
