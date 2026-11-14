@@ -1,0 +1,119 @@
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+body, html { width: 100%; height: 100%; overflow: hidden; background: #0b0e14; color: #fff; }
+#gameCanvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+.hidden { display: none !important; }
+
+.overlay-screen {
+  position: fixed; inset: 0; z-index: 50;
+  background: radial-gradient(circle at center, rgba(18, 24, 38, 0.85), rgba(7, 9, 14, 0.96));
+  display: flex; align-items: center; justify-content: center;
+}
+.auth-card, .result-card {
+  background: linear-gradient(145deg, #161c28, #0f131c);
+  border: 2px solid #ff9d00; border-radius: 12px; padding: 32px; width: 90%; max-width: 400px;
+  text-align: center; box-shadow: 0 0 40px rgba(255, 157, 0, 0.25);
+}
+.brand-badge { display: inline-block; background: #ff9d00; color: #000; font-weight: 800; font-size: 11px; padding: 3px 10px; border-radius: 4px; letter-spacing: 1px; }
+.auth-card h1 { font-size: 32px; margin: 10px 0 4px; letter-spacing: 2px; }
+.auth-card h1 span { color: #ff9d00; }
+.subtitle { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+.auth-card input {
+  width: 100%; padding: 12px 14px; margin-bottom: 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #0b0e14; color: #fff; font-size: 15px;
+}
+.auth-buttons { display: flex; gap: 10px; }
+.btn-primary, .btn-secondary, .btn-booyah-play {
+  flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 800; cursor: pointer; letter-spacing: 1px; transition: 0.2s;
+}
+.btn-primary, .btn-booyah-play { background: linear-gradient(90deg, #ff8800, #ffc400); color: #000; }
+.btn-secondary { background: #1e293b; color: #fff; border: 1px solid #475569; }
+.btn-booyah-play { font-size: 20px; padding: 16px 36px; box-shadow: 0 0 25px rgba(255, 166, 0, 0.5); }
+.error-text { color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+#lobbyScreen { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+.lobby-top {
+  display: flex; justify-content: space-between; align-items: center; padding: 16px 24px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.8), transparent); pointer-events: auto;
+}
+.player-card { display: flex; align-items: center; gap: 12px; background: rgba(15, 23, 42, 0.85); padding: 8px 16px; border-left: 4px solid #ff9d00; border-radius: 4px; }
+.avatar-box { background: #ff9d00; color: #000; font-weight: 900; padding: 6px 10px; border-radius: 4px; font-size: 13px; }
+.player-name { font-weight: 800; font-size: 16px; letter-spacing: 1px; }
+.xp-bar { width: 120px; height: 6px; background: #334155; border-radius: 3px; margin-top: 4px; overflow: hidden; }
+.xp-fill { height: 100%; background: #ff9d00; }
+
+.top-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.nav-tab { background: rgba(15, 23, 42, 0.85); color: #cbd5e1; border: 1px solid #334155; padding: 8px 16px; border-radius: 4px; font-weight: 700; cursor: pointer; }
+.nav-tab.active { background: #ff9d00; color: #000; border-color: #ff9d00; }
+.btn-logout { background: #7f1d1d; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: 700; }
+
+.quick-stats-panel {
+  position: absolute; left: 24px; top: 100px; width: 240px; pointer-events: auto;
+  background: rgba(15, 23, 42, 0.82); border: 1px solid rgba(255, 157, 0, 0.3); padding: 16px; border-radius: 8px;
+}
+.quick-stats-panel h3 { color: #ff9d00; font-size: 13px; margin-bottom: 10px; letter-spacing: 1px; }
+.stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1e293b; font-size: 13px; }
+
+.play-dock { position: absolute; right: 28px; bottom: 28px; text-align: right; pointer-events: auto; }
+.mode-selector { background: rgba(15, 23, 42, 0.9); padding: 8px 14px; border-radius: 6px; margin-bottom: 10px; border-right: 4px solid #ff9d00; }
+.mode-tag { display: block; color: #ff9d00; font-size: 11px; font-weight: 800; }
+.map-name { font-size: 14px; font-weight: 700; }
+
+.panel-box {
+  position: absolute; inset: 85px 24px 24px 24px; background: rgba(11, 15, 25, 0.94);
+  border: 1px solid #334155; border-radius: 10px; padding: 24px; overflow-y: auto; pointer-events: auto;
+}
+.armory-grid, .badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; margin-top: 16px; }
+.gun-card, .badge-card { background: #161e2e; border: 1px solid #334155; padding: 14px; border-radius: 8px; }
+.gun-card h4 { color: #ff9d00; margin-bottom: 6px; }
+.badge-card.unlocked { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+.profile-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0 24px; }
+.p-stat { background: #161e2e; padding: 16px; border-radius: 8px; text-align: center; border-bottom: 3px solid #ff9d00; }
+.p-stat span { display: block; font-size: 28px; font-weight: 900; color: #ff9d00; }
+
+#gameHud { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
+.minimap-wrap { position: absolute; top: 14px; left: 14px; border: 2px solid #ff9d00; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.6); }
+.zone-warning { background: #ef4444; color: #fff; font-size: 11px; font-weight: 800; text-align: center; padding: 2px; }
+.match-counters { position: absolute; top: 14px; right: 14px; display: flex; gap: 10px; }
+.counter-box { background: rgba(15, 23, 42, 0.85); padding: 8px 16px; border-radius: 6px; border-top: 3px solid #ff9d00; text-align: center; }
+.counter-box .label { display: block; font-size: 10px; color: #94a3b8; }
+.counter-box strong { font-size: 20px; }
+
+.kill-feed { position: absolute; top: 75px; right: 14px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.kill-msg { background: rgba(0,0,0,0.7); padding: 4px 10px; border-right: 3px solid #ef4444; font-size: 12px; border-radius: 3px; }
+
+.crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #00ffcc; font-weight: bold; }
+.hitmarker { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; color: #ff2a2a; font-weight: 900; }
+.sniper-scope { position: fixed; inset: 0; border: 120px solid #000; border-radius: 50%; box-shadow: inset 0 0 50px #000; pointer-events: none; }
+
+.loot-prompt { position: absolute; top: 62%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 1px solid #ff9d00; padding: 6px 14px; border-radius: 20px; font-size: 13px; }
+.pc-hint { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); padding: 5px 12px; border-radius: 6px; font-size: 11px; color: #cbd5e1; }
+
+.bottom-hud { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 620px; pointer-events: auto; }
+.bars-container { margin-bottom: 8px; }
+.bar-track { height: 14px; background: rgba(0,0,0,0.75); border-radius: 4px; overflow: hidden; position: relative; margin-bottom: 4px; border: 1px solid #334155; }
+.armor-track { height: 8px; }
+.armor-fill { height: 100%; background: #38bdf8; }
+.hp-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #84cc16); }
+#hpText { position: absolute; inset: 0; text-align: center; font-size: 11px; font-weight: 800; line-height: 14px; }
+
+.weapon-slots { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.w-slot { background: rgba(15, 23, 42, 0.88); border: 1px solid #475569; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.w-slot.active { border-color: #ff9d00; background: rgba(255, 157, 0, 0.25); }
+.gloo-slot { border-color: #38bdf8; color: #38bdf8; }
+.med-slot { border-color: #22c55e; color: #22c55e; }
+
+#mobileControls { position: fixed; inset: 0; pointer-events: none; z-index: 25; }
+.joystick-zone { position: absolute; bottom: 85px; left: 28px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.3); pointer-events: auto; }
+.joystick-knob { position: absolute; top: 35px; left: 35px; width: 46px; height: 46px; border-radius: 50%; background: #ff9d00; opacity: 0.85; }
+.touch-actions { position: absolute; bottom: 85px; right: 20px; width: 190px; height: 190px; pointer-events: auto; }
+.touch-btn { position: absolute; border-radius: 50%; border: 2px solid #fff; background: rgba(15, 23, 42, 0.75); color: #fff; font-weight: 800; font-size: 11px; }
+.fire-btn { width: 72px; height: 72px; right: 10px; bottom: 10px; background: rgba(239, 68, 68, 0.85); border-color: #fca5a5; font-size: 14px; }
+.scope-btn { width: 48px; height: 48px; right: 95px; bottom: 15px; }
+.gloo-btn { width: 52px; height: 52px; right: 90px; bottom: 75px; border-color: #38bdf8; color: #38bdf8; }
+.jump-btn { width: 48px; height: 48px; right: 15px; bottom: 95px; }
+.crouch-btn { width: 44px; height: 44px; right: 65px; bottom: 135px; }
+.reload-btn { width: 44px; height: 44px; right: 15px; bottom: 150px; }
+.loot-btn { width: 56px; height: 56px; right: 145px; bottom: 80px; background: #ff9d00; color: #000; }
+
+.booyah-title { font-size: 46px; color: #ffc400; text-shadow: 0 0 25px rgba(255, 196, 0, 0.8); }
+.result-stats { display: flex; justify-content: space-around; margin: 20px 0; background: #0b0e14; padding: 14px; border-radius: 8px; }
