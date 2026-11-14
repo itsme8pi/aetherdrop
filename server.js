@@ -349,14 +349,13 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', () => {
-    if (currentRoom && currentRoom.players[socket.id]) {
+socket.on('disconnect', () => {
+if (currentRoom && currentRoom.players[socket.id]) {
 delete currentRoom.players[socket.id];
 }
 });
 });
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-console.log(AETHERDROP 3D Server running on port ${PORT});
+console.log('AETHERDROP 3D Server running on port ' + PORT);
 });
-// END OF SERVER.JS
